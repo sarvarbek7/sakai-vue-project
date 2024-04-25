@@ -1,10 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { useLayout } from '@/layout/composables/layout';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.js';
-
-const { onMenuToggle } = useLayout();
 
 const outsideClickListener = ref(null);
 const topbarMenuActive = ref(false);
@@ -57,15 +54,6 @@ const profileMenuItems = computed(() => {
             command: () => {
                 router.push({
                     name: 'organizations-admin'
-                });
-            }
-        },
-        {
-            label: 'Hujjatlar',
-            icon: 'pi pi-folder-open',
-            command: () => {
-                router.push({
-                    name: 'documents-admin'
                 });
             }
         }
@@ -136,10 +124,6 @@ const isOutsideClicked = (event) => {
             <img :src="logoUrl" alt="logo" />
             <span>Uzrailways</span>
         </router-link>
-
-        <button class="p-link layout-menu-button layout-topbar-button" @click="onMenuToggle()">
-            <i class="pi pi-bars"></i>
-        </button>
 
         <button class="p-link layout-topbar-menu-button layout-topbar-button" @click="onTopBarMenuButton()">
             <i class="pi pi-ellipsis-v"></i>

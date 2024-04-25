@@ -6,57 +6,64 @@ import Swal from 'sweetalert2';
 export const useAuthStore = defineStore('session', {
     state: () => ({
         _isLogged: !!localStorage.getItem('accessToken'),
-        _userId: localStorage.getItem('userId'),
-        _organizationId: localStorage.getItem('organizationId'),
-        _role: localStorage.getItem('role')
+        _user: JSON.parse(localStorage.getItem("user")),
+        _role: localStorage.getItem('role'),
+        _expireAt: localStorage.getItem('expiryAt'),
     }),
     getters: {
         isLogged: (state) => state._isLogged,
-        isSuperAdmin: (state) => state._role == 'superAdmin',
-        userId: (state) => state._userId,
-        organizationId: (state) => state._organizationId,
+        isSuperAdmin: (state) => state._isLogged && state._role.toLowerCase() == 'superadmin',
+        isAdmin: (state) => state._isLogged && state._role.toLowerCase() == 'admin',
+        expireAt: (state) => state._expireAt,
+        user: (state) => state._user,
         role: (state) => state._role
     },
     actions: {
         login(loginDetails) {
             http.post('auth/login', loginDetails).then((response) => {
                 this._isLogged = true;
-                this._userId = response.data['userId'];
-                this._organizationId = response.data['organizationId'];
-                this._role = response.data['role'];
+                this._user = response.data['user'];
+                this._role = response.data['role'].toLowerCase()
+                this._expireAt = response.data['expiryAt'];
+                this._user["login"] = response.data['login'];
 
-                router.push({ path: '/' });
-
-                localStorage.setItem('userId', `${this.userId}`);
-                localStorage.setItem('organizationId', this._organizationId);
-                localStorage.setItem('role', this._role);
-                localStorage.setItem('accessToken', `Bearer ${response.data['accessToken']}`);
-            })
-            .catch((err) => {
-                if (err.code === 'ERR_BAD_REQUEST')
-                {
-                    if (err.response.data === 'Invalid login attempt.'){
-                        Swal.fire({
-                            icon: "error",
-                            title: "Kechirasiz...",
-                            text: "Ma'lumotlar topilmadi."
-                        });
-                    }
+                if (this.role === 'admin') {
+                    router.push({ name:  'organizations-admin'});
                 }
-            });
+                else {
+                    router.push({ path: '/' });
+                }
+
+                localStorage.setItem('user', JSON.stringify(this._user));
+                localStorage.setItem('role', this._role);
+                localStorage.setItem('accessToken', `Bearer ${response.data['token']}`);
+                localStorage.setItem('expiryAt');
+            })
+                .catch((err) => {
+                    if (err.code === 'ERR_BAD_REQUEST') {
+                        if (err.response.status === 401) {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Kechirasiz...",
+                                text: "Ma'lumotlar topilmadi."
+                            });
+                        }
+                    }
+                });
         },
         logout() {
             http.get('auth/logout').then((response) => {
                 console.log(response.data);
                 router.push({ path: '/' });
-                this._userId = null;
-                this._organizationId = null;
-                this._role = null;
                 this._isLogged = false;
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('userId');
-                localStorage.removeItem('organizationId');
+
+                this._user = null;
+                this._role = null;
+                this._expireAt = null;
+                localStorage.removeItem('user');
                 localStorage.removeItem('role');
+                localStorage.removeItem('expiryAt');
+                localStorage.setItem('accessToken', `Bearer ${response.data['token']}`);
             });
         }
     }

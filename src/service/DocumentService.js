@@ -2,7 +2,7 @@ import http from '@/clients/axios-setup';
 
 export class DocumentService{
     getDocumentTypes() {
-        return http.get('documentTypes')
+        return http.get('documents/types')
         .then((res) => res.data);
     }
 

@@ -13,10 +13,6 @@ export class UserService {
             .then((res) => res.data);
     }
 
-    getUserAssignedOrganizationsById(userId) {
-        return http.get(`${this.endpoint}/${userId}/assigned-organizations`)
-            .then((res) => res.data);
-    }
 
     getUserById(id) {
         return http.get(`${this.endpoint}/${id}`)

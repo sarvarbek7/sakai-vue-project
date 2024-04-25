@@ -7,8 +7,8 @@ import { useToast } from 'primevue/usetoast';
 const toast = useToast();
 
 const organizations = ref(null);
-const pageSize = ref(null);
-const pageToken = ref(null);
+const pageSize = ref(25);
+const pageToken = ref(1);
 const totalOrganizationsCount = ref(null);
 const dropdownOrganizations = ref([]);
 const selectedOrganization = ref(null);
@@ -55,7 +55,7 @@ const saveOrganization = () => {
             organizationService
                 .updateOrganization(organization.value)
                 .then((data) => {
-                    data.primaryOrganizationTitle = organization.value.primaryOrganizationTitle;
+                    data.primaryOrganizationTitle = selectedOrganization.value.title;
                     organizations.value[findIndexById(organization.value.id)] = data;
                     toast.add({ severity: 'success', summary: 'Muvaqqiyatli', detail: "Tashkilot ma'lumotlari muvaqqiyatli o'zgartirildi", life: 3000 });
                     organizationDialog.value = false;
@@ -71,7 +71,7 @@ const saveOrganization = () => {
             organizationService
                 .createOrganization(organization.value)
                 .then((data) => {
-                    data.primaryOrganizationTitle = selectedOrganization.value.primaryOrganizationTitle;
+                    data.primaryOrganizationTitle = selectedOrganization.value.title;
 
                     organizations.value.push(data);
                     toast.add({ severity: 'success', summary: 'Muvaqqiyatli', detail: "Tashkilot ma'lumotlari muvaqqiyatli yaratildi", life: 3000 });
@@ -82,7 +82,7 @@ const saveOrganization = () => {
                 })
                 .catch((e) => {
                     console.log(e);
-                    toast.add({ severity: 'error', summary: 'Xatolik', detail: "Xodim ma'lumotlarini saqlashda xatolik yuz berdi.", life: 3000 });
+                    toast.add({ severity: 'error', summary: 'Xatolik', detail: "Tashkilot ma'lumotlarini saqlashda xatolik yuz berdi.", life: 3000 });
                 });
         }
     }
@@ -165,7 +165,7 @@ const onPrimaryOrganizationsFilter = (filterEvent) => {
 
 const onPrimaryOrganizationChange = (e) => {
     selectedOrganization.value =
-        dropdownOrganizations.value.filter(org => org.primaryOrganizationId === e.value)[0];
+        dropdownOrganizations.value.filter(org => org.id === e.value)[0];
 }
 
 </script>
@@ -194,7 +194,7 @@ const onPrimaryOrganizationChange = (e) => {
                 </Toolbar>
 
                 <DataTable ref="dt" :value="organizations" v-model:selection="selectedOrganizations" dataKey="id"
-                    :paginator="true" :rows="10" :filters="filters"
+                    :paginator="true" :rows="pageSize" :filters="filters"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                     :rowsPerPageOptions="[5, 10, 25]"
                     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} employees">
@@ -222,6 +222,13 @@ const onPrimaryOrganizationChange = (e) => {
                         <template #body="slotProps">
                             <span class="p-column-title">Yuqori Tashkilot</span>
                             {{ slotProps.data.primaryOrganizationTitle ?? 'Yuqori tashkilot mavjud emas' }}
+                        </template>
+                    </Column>
+                    <Column field="physicalIdentity" header="Identifikatsiya" :sortable="true"
+                        headerStyle="width:14%; min-width:10rem;">
+                        <template #body="slotProps">
+                            <span class="p-column-title">Identifikatsiya</span>
+                            {{ slotProps.data.physicalIdentity }}
                         </template>
                     </Column>
                     <Column field="details" header="Qo'shimcha ma'lumot" :sortable="true"
@@ -263,7 +270,14 @@ const onPrimaryOrganizationChange = (e) => {
                             class="w-full md:w-20rem" 
                             placeholder="Tashkilot nomidagi kamida 3ta harfni kiriting" />
                     </div>
-                    <div>
+                    <div class="field">
+                        <label for="title">Tashkilot identifikatsiya ma'lumoti</label>
+                        <InputText id="title" v-model="organization.physicalIdentity" required="true" autofocus
+                            :invalid="submitted && !organization.physicalIdentity" />
+                        <small class="p-invalid" v-if="submitted && !organization.physicalIdentity">Tashkilot identifikatsiya ma'lumoti
+                            kiritilishi shart</small>
+                    </div>
+                    <div class="field">
                         <label for="details">Qo'shimcha ma'lumot</label>
                         <Textarea d="details" v-model="organization.details" required="true" autofocus />
                     </div>

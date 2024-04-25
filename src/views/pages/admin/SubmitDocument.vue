@@ -12,7 +12,7 @@ const documentService = new DocumentService();
 onMounted(() => {
     documentService.getDocumentTypes()
         .then(docTypes => {
-            documentTypes.value = docTypes;
+            documentTypes.value = docTypes.documentTypes;
         });
 })
 
@@ -71,12 +71,15 @@ const onSelectedFiles = (event) => {
     files.value = event.files;
     files.value.forEach((file) => {
         totalSize.value += parseInt(formatSize(file.size));
+
         documents.value.push({
             documentTypeId: documentTypes.value[0].id,
             title: getFileNameWithoutExtionsion(file.name),
             registeredDate: todayDateOnlyAsString,
             registeredNumber: ''
         });
+
+        console.log(documents.value);
     });
 };
 
@@ -85,8 +88,8 @@ const uploadEvent = (callback) => {
     console.log(files.value);
 
     const request = {
-        userId: localStorage.getItem('userId'),
-        organizationId: localStorage.getItem('organizationId'),
+        userId: JSON.parse(localStorage.getItem('user')).id,
+        organizationId: 1,
         documents: documents.value,
         files: files.value
     };
@@ -95,7 +98,9 @@ const uploadEvent = (callback) => {
         .then(() => {
             toast.add({ severity: "info", summary: "Success", detail: "Hujjatlar yuklandi.", life: 3000 });
             callback();
-            onClearTemplatingUpload();
+            totalSize.value = 0;
+            totalSizePercent.value = 0;
+            documents.value = [];
         });
 };
 
@@ -120,8 +125,7 @@ const formatSize = (bytes) => {
 <template>
     <div class="card">
         <Toast />
-        <FileUpload name="documents[]" :multiple="true" @select="onSelectedFiles"
-            customUpload>
+        <FileUpload name="documents[]" :multiple="true" @select="onSelectedFiles" customUpload>
             <template #header="{ chooseCallback, uploadCallback, clearCallback, files }">
                 <div class="flex flex-wrap justify-content-between align-items-center flex-1 gap-2">
                     <div class="flex gap-2">

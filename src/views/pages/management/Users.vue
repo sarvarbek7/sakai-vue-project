@@ -25,12 +25,39 @@ const pageSize = ref(null);
 const pageToken = ref(null);
 const totalUsersCount = ref(null);
 const editingRows = ref([]);
+const roles = ref([
+    {
+        role: 'user',
+        name: 'User'
+    },
+    {
+        role: 'admin',
+        name: 'Admin'
+    },
+    {
+        role: 'superadmin',
+        name: 'Super Admin'
+    }
+]);
+const getRole = (roleName) => {
+    const role =
+        roles.value.find(rol => rol.role == roleName);
 
-const assignedUserRole = ref(null);
+    if (role == undefined) {
+        return `Noma'lum`;
+    }
+    return role.name;
+}
+
+const userCredentials = ref({
+    login: '',
+    password: ''
+});
+
 const userAssignedOrganizations = ref([]);
 const dropdownOrganizations = ref([]);
 
-const assignOrganizationDialog = ref(false);
+const haveCredential = ref(false);
 const userDialog = ref(false);
 const deleteUserDialog = ref(false);
 const organizationsDialog = ref(false);
@@ -46,6 +73,7 @@ const organizationService = new OrganizationService();
 onBeforeMount(() => {
     initFilters();
 });
+
 onMounted(() => {
     userService.getUsers().then((data) => {
         users.value = data.users;
@@ -61,23 +89,26 @@ const openNew = () => {
     userDialog.value = true;
 };
 
-const assignNewOrganization = () => {
-    assignedUserRole.value = {};
-    assignOrganizationDialog.value = true;
-};
-
 const hideDialog = () => {
     userDialog.value = false;
     submitted.value = false;
 };
 
 const showOrganizations = (id) => {
-    userService.getUserAssignedOrganizationsById(id).then((data) => {
-        userAssignedOrganizations.value = data.assignedOrganizations;
+    haveCredential.value = false;
+    userCredentials.value.login = '';
+    userAssignedOrganizations.value = [];
 
-        dropdownOrganizations.value = data.assignedOrganizations.map((uAO) => ({
-            id: uAO.organizationId,
-            title: uAO.organizationTitle
+    userService.getUserByDetails(id).then((data) => {
+        userAssignedOrganizations.value = data.organizations;
+        if (data.login != null) {
+            haveCredential.value = true;
+            userCredentials.value.login = data.login
+        }
+
+        dropdownOrganizations.value = data.organizations.map((org) => ({
+            id: org.organizationId,
+            title: org.organizationTitle
         }));
     });
 
@@ -172,17 +203,6 @@ const filterDropdownOrganizations = (filterEvent) => {
     }
 };
 
-const assignRole = () => {
-    userService.assignRoleToUser(user.value.id, assignedUserRole.value)
-        .then((data) => {
-            data.organizationTitle =
-                dropdownOrganizations.value.filter((org) => org.id === data.organizationId)[0].title;
-
-            userAssignedOrganizations.value.push(data);
-            assignOrganizationDialog.value = false;
-        });
-}
-
 const deleteRole = (id) => {
     userService.unAssignRole(id)
         .then(() => {
@@ -209,7 +229,8 @@ const initFilters = () => {
                 <Toolbar class="mb-4">
                     <template v-slot:start>
                         <div class="my-2">
-                            <Button label="Xodim qo'shish" icon="pi pi-plus" class="mr-2" severity="success" @click="openNew" />
+                            <Button label="Xodim qo'shish" icon="pi pi-plus" class="mr-2" severity="success"
+                                @click="openNew" />
                         </div>
                     </template>
 
@@ -237,13 +258,6 @@ const initFilters = () => {
                     </template>
 
                     <Column selectionMode="multiple" headerStyle="min-width: 3rem; width: 5%"></Column>
-                    <Column field="physicalIdentity" header="JSHIR" :sortable="true"
-                        headerStyle="width:14%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">JSHIR</span>
-                            {{ slotProps.data.physicalIdentity }}
-                        </template>
-                    </Column>
                     <Column field="lastName" header="Familiya" :sortable="true"
                         headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
@@ -257,14 +271,25 @@ const initFilters = () => {
                             {{ slotProps.data.firstName }}
                         </template>
                     </Column>
-                    <Column field="jobPosition" header="Lavozim" :sortable="true"
-                        headerStyle="width:14%; min-width:10rem;">
+                    <Column field="physicalIdentity" header="JSHIR" headerStyle="width:14%; min-width:10rem;">
+                        <template #body="slotProps">
+                            <span class="p-column-title">JSHIR</span>
+                            {{ slotProps.data.physicalIdentity }}
+                        </template>
+                    </Column>
+                    <Column field="jobPosition" header="Lavozim" headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
                             <span class="p-column-title">Lavozim</span>
                             {{ slotProps.data.jobPosition }}
                         </template>
                     </Column>
-                    <Column header="Biriktirilgan korxonalar" headerStyle="width:14%; min-width:10rem;">
+                    <Column field="role" header="Rol" headerStyle="width:14%; min-width:10rem;">
+                        <template #body="slotProps">
+                            <span class="p-column-title">Rol</span>
+                            {{ getRole(slotProps.data.role) }}
+                        </template>
+                    </Column>
+                    <Column header="Ma'lumotlar" headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
                             <span class="p-column-title">Korxonalar</span>
                             <Button label="Ko'rish" icon="pi pi-external-link"
@@ -283,13 +308,7 @@ const initFilters = () => {
 
                 <Dialog v-model:visible="userDialog" :style="{ width: '450px' }" header="Xodim ma'lumotlari"
                     :modal="true" class="p-fluid">
-                    <div class="field">
-                        <label for="physicalIdentity">JSHIR</label>
-                        <InputText id="physicalIdentity" v-model="user.physicalIdentity" required="true" autofocus
-                            :invalid="submitted && !user.physicalIdentity" />
-                        <small class="p-invalid" v-if="submitted && !user.physicalIdentity">Xodim JSHIRini
-                            kiriting</small>
-                    </div>
+
                     <div class="field">
                         <label for="lastName">Familiya</label>
                         <InputText id="lastName" v-model="user.lastName" required="true" autofocus
@@ -303,12 +322,24 @@ const initFilters = () => {
                         <small class="p-invalid" v-if="submitted && !user.firstName">Xodim ismini kiriting</small>
                     </div>
                     <div class="field">
+                        <label for="physicalIdentity">JSHIR</label>
+                        <InputText id="physicalIdentity" v-model="user.physicalIdentity" required="true" autofocus
+                            :invalid="submitted && !user.physicalIdentity" />
+                        <small class="p-invalid" v-if="submitted && !user.physicalIdentity">Xodim JSHIRini
+                            kiriting</small>
+                    </div>
+                    <div class="field">
                         <label for="jobPosition">Lavozim</label>
                         <InputText id="jobPosition" v-model="user.jobPosition" required="true" autofocus
                             :invalid="submitted && !user.jobPosition" />
                         <small class="p-invalid" v-if="submitted && !user.jobPosition">Xodim lavozimini kiriting</small>
                     </div>
-
+                    <div class="field">
+                        <label for="role">Rol</label>
+                        <Dropdown id="role" :options="roles" optionLabel="name" optionValue="role" v-model="user.role"
+                            required="true" autofocus :invalid="submitted && !user.role" />
+                        <small class="p-invalid" v-if="submitted && !user.role">Xodim rolini kiriting</small>
+                    </div>
                     <template #footer>
                         <Button label="Cancel" icon="pi pi-times" text="" @click="hideDialog" />
                         <Button label="Save" icon="pi pi-check" text="" @click="saveUser" />
@@ -327,85 +358,23 @@ const initFilters = () => {
                     </template>
                 </Dialog>
 
-                <Dialog v-model:visible="organizationsDialog" modal header="Xodim biriktirilgan tashkilotlar"
-                    :style="{ height: '70vh', width: '80vw' }" :breakpoints="{ '1199px': '80vw', '575px': '90vw' }">
-                    <Toolbar>
-                        <template #start>
-                            <div class="my-2">
-                                <Button label="Tashkilot biriktirish" icon="pi pi-plus" class="mr-2" severity="success"
-                                    @click="assignNewOrganization" />
-                            </div>
-                        </template>
-                    </Toolbar>
-                    <DataTable v-model:editingRows="editingRows" :value="userAssignedOrganizations" editMode="row" :pt="{
-                        table: { style: 'width: 90%' },
-                        column: {
-                            bodycell: ({ state }) => ({
-                                style: state['d_editing'] && 'padding-top: 0.6rem; padding-bottom: 0.6rem'
-                            })
-                        }
-                    }">
-                        <Column field="organizationId" header="Korxona">
-                            <template #body="{ data }">
-                                <span>{{ data.organizationTitle }}</span>
-                            </template>
-                            <template #editor="{ data, field }">
-                                <Dropdown @filter="onAssignedOrganizationsFilter" @change="onAssignedOrganizationChange"
-                                    v-model="data[field]" filter :options="dropdownOrganizations" optionLabel="title"
-                                    optionValue="id" emptyMessage="Ma'lumot topilmadi" class="w-10rem"
-                                    placeholder="Tashkilot nomidagi kamida 3ta harfni kiriting" />
-                            </template>
-                        </Column>
-                        <Column field="login" header="Login">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" />
-                            </template>
-                        </Column>
-                        <Column field="role" header="Rol">
-                            <template #editor="{ data, field }">
-                                <InputText v-model="data[field]" />
-                            </template>
-                        </Column>
-                        <Column :rowEditor="true" style="width: 10%; min-width: 8rem" bodyStyle="text-align:center">
-                        </Column>
-                        <Column field="id" style="width: 20px; min-width: 20px;">
-                            <template #body="{ data }">
-                                <Button @click="requireConfirmation($event, data.id)" icon="pi pi-trash"
-                                    severity="danger" rounded />
-                            </template>
-                        </Column>
-                    </DataTable>
-                </Dialog>
+                <Dialog v-model:visible="organizationsDialog" modal header="Login, parol va biriktirilgan korxonalar"
+                    :breakpoints="{ '1199px': '80vw', '575px': '90vw' }">
+                    <div class="">
+                        <div class="field">
+                            <label for="login">Login: </label>
+                            <InputText id="login" v-model="userCredentials.login" required="true" autofocus
+                                placeholder="Loginni kiriting" />
+                        </div>
+                        <div class="field">
+                            <label for="password">Parol: </label>
+                            <Password id="password" placeholder="Parolni kiriting." v-model="userCredentials.password"
+                                required="true" autofocus toggleMask :feedback="false" />
+                        </div>
 
-                <Dialog position="top" v-model:visible="assignOrganizationDialog" :style="{ width: '450px' }"
-                    header="Tashkilot biriktirish" :modal="true" class="p-fluid">
-                    <div class="field">
-                        <label for="login">Login</label>
-                        <InputText id="login" v-model="assignedUserRole.login" required="true" autofocus />
-
-                    </div>
-                    <div class="field">
-                        <label for="password">Parol</label>
-                        <Password :feedback="false" toggleMask id="password" v-model="assignedUserRole.password"
-                            required="true" autofocus />
-
-                    </div>
-                    <div class="field">
-                        <label for="role">Role</label>
-                        <InputText id="role" v-model="assignedUserRole.role" required="true" autofocus />
-                    </div>
-                    <div class="field">
-                        <label for="organization">Tashkilot</label>
-                        <Dropdown v-model="assignedUserRole.organizationId" :options="dropdownOrganizations" filter
-                            @filter="filterDropdownOrganizations" optionValue="id" optionLabel="title" id="organization"
-                            placeholder="Tashlikot nomidagi kamida 3ta harfni kiriting"
-                            emptyMessage="Ma'lumot topilmadi" />
-                    </div>
-                    <div></div>
-                    <template #footer>
-                        <Button label="Cancel" icon="pi pi-times" text="" @click="hideDialog" />
-                        <Button label="Save" icon="pi pi-check" text="" @click="assignRole" />
-                    </template>
+                        <Button v-if="haveCredential" label="O'zgartirish" severity="warning" raised />
+                        <Button v-else label="Yaratish" severity="primary" raised />
+                    </div>   
                 </Dialog>
 
                 <ConfirmPopup group="headless">

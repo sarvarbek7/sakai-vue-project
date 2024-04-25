@@ -3,7 +3,7 @@ import axios from "axios";
 import Swal from 'sweetalert2';
 
 const instance = axios.create({
-    baseURL: 'https://localhost:7164/api',
+    baseURL: 'https://localhost:7250/api',
 })
 
 instance.interceptors.request.use(function (config) {
@@ -27,11 +27,11 @@ instance.interceptors.response.use(function (response) {
         });
     }
 
-if (error.request.status === 401) {
-    router.push({ name: 'accessDenied' });
-}
+    if (error.request.status === 401 && !error.request.responseURL === `${instance.baseURL}/auth/login`) {
+        router.push({ name: 'accessDenied' });
+    }
 
-return Promise.reject(error);
+    return Promise.reject(error);
 });
 
 export default instance;
