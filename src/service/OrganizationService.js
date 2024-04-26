@@ -14,11 +14,18 @@ export class OrganizationService {
     }
 
     createOrganization(organization) {
+        if (organization.primaryOrganizationId === 0){
+            organization.primaryOrganizationId = null;
+        }
         return http.post(this.endpoint, organization)
             .then((res) => res.data);
     }
 
     updateOrganization(organization) {
+        if (organization.primaryOrganizationId === 0){
+            organization.primaryOrganizationId = null;
+        }
+        
         return http.put(this.endpoint, organization)
             .then((res) => res.data);
     }

@@ -13,6 +13,10 @@ export class UserService {
             .then((res) => res.data);
     }
 
+    getUserOrganizations(id) {
+        return http.get(`${this.endpoint}/${id}/organizations`)
+            .then((res) => res.data);
+    }
 
     getUserById(id) {
         return http.get(`${this.endpoint}/${id}`)
@@ -34,13 +38,13 @@ export class UserService {
             .then((res) => res.data);
     }
 
-    assignRoleToUser(userId, assignedUserRole) {
-        return http.post(`${this.endpoint}/${userId}/assign-role`, assignedUserRole)
+    assignOrganization(userId, assignedOrganizationIds) {
+        return http.post(`${this.endpoint}/${userId}/assign-organizations`, assignedOrganizationIds)
             .then((res) => res.data);
     }
 
-    unAssignRole(id) {
-        return http.delete(`${this.endpoint}/unAssign-role/${id}`)
+    unAssignOrganization(userId, organizationId) {
+        return http.delete(`${this.endpoint}/${userId}/unassign-organization/${organizationId}`)
             .then((res) => res.data);
     }
 }

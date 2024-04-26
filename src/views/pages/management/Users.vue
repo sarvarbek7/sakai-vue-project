@@ -5,6 +5,7 @@ import { UserService } from '@/service/UserService';
 import { OrganizationService } from '@/service/OrganizationService';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from "primevue/useconfirm";
+import Swal from 'sweetalert2';
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -13,9 +14,9 @@ const requireConfirmation = (event, id) => {
     confirm.require({
         target: event.currentTarget,
         group: 'headless',
-        message: 'Save your current process?',
+        message: 'Xodimni tashkilot adminligidan o\'chirmoqchimisiz?',
         accept: () => {
-            deleteRole(id);
+            unAssignOrganization(id);
         }
     });
 }
@@ -24,7 +25,6 @@ const users = ref(null);
 const pageSize = ref(null);
 const pageToken = ref(null);
 const totalUsersCount = ref(null);
-const editingRows = ref([]);
 const roles = ref([
     {
         role: 'user',
@@ -70,6 +70,18 @@ const submitted = ref(false);
 const userService = new UserService();
 const organizationService = new OrganizationService();
 
+const filterAssignedOrganization = (filterEvent) => {
+    if (filterEvent.value.length >= 3) {
+        organizationService
+            .getOrganizations({
+                title: filterEvent.value
+            })
+            .then((data) => {
+                dropdownOrganizations.value = data.organizations;
+            });
+    }
+}
+
 onBeforeMount(() => {
     initFilters();
 });
@@ -98,9 +110,11 @@ const showOrganizations = (id) => {
     haveCredential.value = false;
     userCredentials.value.login = '';
     userAssignedOrganizations.value = [];
+    newAssignedOrganization.value = {};
 
     userService.getUserByDetails(id).then((data) => {
         userAssignedOrganizations.value = data.organizations;
+
         if (data.login != null) {
             haveCredential.value = true;
             userCredentials.value.login = data.login
@@ -188,31 +202,35 @@ const exportCSV = () => {
     });
 };
 
-const filterDropdownOrganizations = (filterEvent) => {
-    if (filterEvent.value.length >= 3) {
-        organizationService
-            .getOrganizations({
-                title: filterEvent.value
-            })
-            .then((data) => {
-                dropdownOrganizations.value = data.organizations.map((org) => ({
-                    id: org.id,
-                    title: org.title
-                }));
-            });
-    }
-};
+const assignedOrganizationChange = (change) => {
+    newAssignedOrganization.value.userId = user.value.id;
+    newAssignedOrganization.value.organizationId = change.value;
+} 
 
-const deleteRole = (id) => {
-    userService.unAssignRole(id)
+const newAssignedOrganization = ref({});
+
+const unAssignOrganization = (organizationId) => {
+    userService.unAssignOrganization(user.value.id, organizationId)
         .then(() => {
             userAssignedOrganizations.value =
-                userAssignedOrganizations.value.filter((org => org.id !== id));
+                userAssignedOrganizations.value.filter((org => org.organizationId !== organizationId));
 
             toast.add({ severity: 'success', summary: 'Muvaqqiyatli', detail: `Ma'lumot muvaqqiyatli o'chirildi`, life: 3000 });
 
         });
 }
+
+const assignOrganization = () => {
+    const userId = newAssignedOrganization.value.userId;
+    const assignedOrganizationIds = [newAssignedOrganization.value.organizationId]
+
+    userService.assignOrganization(userId, assignedOrganizationIds)
+        .then((data) => {
+            toast.add({ severity: 'success', summary: 'Muvaqqiyatli', detail: `Ma'lumot muvaqqiyatli qo'shildi`, life: 3000 });
+            console.log(data);
+        })
+        .catch(err => console.log(err)); 
+};
 
 const initFilters = () => {
     filters.value = {
@@ -374,7 +392,23 @@ const initFilters = () => {
 
                         <Button v-if="haveCredential" label="O'zgartirish" severity="warning" raised />
                         <Button v-else label="Yaratish" severity="primary" raised />
-                    </div>   
+                    </div>
+                    <div>
+                        <DataTable :value="userAssignedOrganizations">
+                            <Column field="organizationTitle" header="Biriktirilgan korxona" />
+                            <Column field="id" >
+                                <template #body="slotProps">
+                                    <Button @click="requireConfirmation($event, slotProps.data.organizationId)" class="ml-2" rounded severity="danger" icon="pi pi-trash" />
+                                </template>
+                            </Column>
+                        </DataTable>
+                        <Dropdown v-model="newAssignedOrganization.organizationId" :options="dropdownOrganizations" optionValue="id" optionLabel="title" 
+                            filter @filter="filterAssignedOrganization"
+                            @change="assignedOrganizationChange"
+                            emptyMessage="Ma'lumot topilmadi"
+                            placeholder="Tashkilotni tanlang" class="w-14rem mt-1"></Dropdown>
+                        <Button @click="assignOrganization" class="ml-2" label="Qo'shish"/>
+                    </div>
                 </Dialog>
 
                 <ConfirmPopup group="headless">

@@ -103,8 +103,12 @@ const confirmDeleteProduct = (editProduct) => {
     deleteOrganizationDialog.value = true;
 };
 
-const confirmDeleteSelected = () => {
-    deleteOrganizationsDialog.value = true;
+const removePrimaryOrganization = () =>{
+    organization.value.primaryOrganizationId = 0;
+}
+
+const confirmDeletePrimaryOrganization = () => {
+
 };
 
 const deleteSelectedOrganizations = () => {
@@ -248,8 +252,8 @@ const onPrimaryOrganizationChange = (e) => {
                     </Column>
                 </DataTable>
 
-                <Dialog v-model:visible="organizationDialog" :style="{ width: '450px' }" header="Tashkilot ma'lumotlari"
-                    :modal="true" class="p-fluid">
+                <Dialog v-model:visible="organizationDialog" header="Tashkilot ma'lumotlari" :modal="true"
+                    class="p-fluid w-full max-w-30rem">
                     <div class="field">
                         <label for="title">Tashkilot nomi</label>
                         <InputText id="title" v-model="organization.title" required="true" autofocus
@@ -259,22 +263,22 @@ const onPrimaryOrganizationChange = (e) => {
                     </div>
                     <div class="field">
                         <label for="primaryOrg">Yuqori tashkilot</label>
-                        <Dropdown @filter="onPrimaryOrganizationsFilter"
-                         @change="onPrimaryOrganizationChange"
-                            v-model="organization.primaryOrganizationId" 
-                            filter 
-                            :options="dropdownOrganizations"
-                            optionLabel="title" 
-                            optionValue="id" 
-                            emptyMessage="Ma'lumot topilmadi"
-                            class="w-full md:w-20rem" 
-                            placeholder="Tashkilot nomidagi kamida 3ta harfni kiriting" />
+                        <div class="flex align-items-center">
+                            <Dropdown @filter="onPrimaryOrganizationsFilter" @change="onPrimaryOrganizationChange"
+                                v-model="organization.primaryOrganizationId" filter :options="dropdownOrganizations"
+                                optionLabel="title" optionValue="id" emptyMessage="Ma'lumot topilmadi"
+                                class="w-18rem md:w-18rem"
+                                placeholder="Tashkilot nomidagi kamida 3ta harfni kiriting" />
+                            <Button @click="removePrimaryOrganization" severity="danger" icon="pi pi-trash" rounded class="mx-1" />
+                        </div>
+
                     </div>
                     <div class="field">
                         <label for="title">Tashkilot identifikatsiya ma'lumoti</label>
                         <InputText id="title" v-model="organization.physicalIdentity" required="true" autofocus
                             :invalid="submitted && !organization.physicalIdentity" />
-                        <small class="p-invalid" v-if="submitted && !organization.physicalIdentity">Tashkilot identifikatsiya ma'lumoti
+                        <small class="p-invalid" v-if="submitted && !organization.physicalIdentity">Tashkilot
+                            identifikatsiya ma'lumoti
                             kiritilishi shart</small>
                     </div>
                     <div class="field">

@@ -47,7 +47,7 @@ const router = createRouter({
                     },
                     children: [
                         {
-                            path: 'documents',
+                            path: 'organizations/:id/documents',
                             name: 'documents-admin',
                             component: () => import('@/views/pages/admin/SubmitDocument.vue')
                         },

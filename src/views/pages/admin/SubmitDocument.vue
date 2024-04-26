@@ -3,18 +3,42 @@ import { ref, onMounted } from 'vue';
 import { usePrimeVue } from 'primevue/config';
 import { useToast } from "primevue/usetoast";
 import { DocumentService } from '@/service/DocumentService';
+import { useRouter } from 'vue-router';
+import Swal from 'sweetalert2';
+
 
 const $primevue = usePrimeVue();
 const toast = useToast();
+const router = useRouter();
+const organizationId = ref(router.currentRoute.value.params.id);
 
 const documentService = new DocumentService();
+const storedDocuments = ref([]);
+const pageSize = ref(25);
+const totalRecords = ref(0);
+const filters = ref({
+    'name': {value: '', matchMode: 'contains'},
+    'country.name': {value: '', matchMode: 'contains'},
+    'company': {value: '', matchMode: 'contains'},
+    'representative.name': {value: '', matchMode: 'contains'},
+});
 
 onMounted(() => {
     documentService.getDocumentTypes()
         .then(docTypes => {
             documentTypes.value = docTypes.documentTypes;
         });
-})
+
+    documentService.getOrganizationDocuments(organizationId.value, {
+        limit: pageSize.value
+    })
+        .then(data => {
+            storedDocuments.value = data.documents;
+            pageSize.value = data.pageSize
+            totalRecords.value = data.total
+        }
+        );
+});
 
 const totalSize = ref(0);
 const totalSizePercent = ref(0);
@@ -78,25 +102,22 @@ const onSelectedFiles = (event) => {
             registeredDate: todayDateOnlyAsString,
             registeredNumber: ''
         });
-
-        console.log(documents.value);
     });
 };
 
 const uploadEvent = (callback) => {
     totalSizePercent.value = totalSize.value / 10;
-    console.log(files.value);
 
     const request = {
         userId: JSON.parse(localStorage.getItem('user')).id,
-        organizationId: 1,
+        organizationId: organizationId.value,
         documents: documents.value,
         files: files.value
     };
 
     documentService.uploadDocuments(request)
         .then(() => {
-            toast.add({ severity: "info", summary: "Success", detail: "Hujjatlar yuklandi.", life: 3000 });
+            Swal.fire({title: "Hujjatlar yuklandi.", icon: "success"})
             callback();
             totalSize.value = 0;
             totalSizePercent.value = 0;
