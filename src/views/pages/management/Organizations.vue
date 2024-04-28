@@ -55,7 +55,10 @@ const saveOrganization = () => {
             organizationService
                 .updateOrganization(organization.value)
                 .then((data) => {
-                    data.primaryOrganizationTitle = selectedOrganization.value.title;
+                    if (selectedOrganization.value !== null) {
+                        data.primaryOrganizationTitle = selectedOrganization.value.title;
+                    }
+
                     organizations.value[findIndexById(organization.value.id)] = data;
                     toast.add({ severity: 'success', summary: 'Muvaqqiyatli', detail: "Tashkilot ma'lumotlari muvaqqiyatli o'zgartirildi", life: 3000 });
                     organizationDialog.value = false;
@@ -64,14 +67,15 @@ const saveOrganization = () => {
                     selectedOrganization.value = null;
                 })
                 .catch((e) => {
-                    console.log(e);
                     toast.add({ severity: 'error', summary: 'Xatolik', detail: "Tashkilot ma'lumotlarini saqlashda xatolik yuz berdi.", life: 3000 });
                 });
         } else {
             organizationService
                 .createOrganization(organization.value)
                 .then((data) => {
-                    data.primaryOrganizationTitle = selectedOrganization.value.title;
+                    if (selectedOrganization.value !== null) {
+                        data.primaryOrganizationTitle = selectedOrganization.value.title;
+                    }
 
                     organizations.value.push(data);
                     toast.add({ severity: 'success', summary: 'Muvaqqiyatli', detail: "Tashkilot ma'lumotlari muvaqqiyatli yaratildi", life: 3000 });
@@ -103,7 +107,7 @@ const confirmDeleteProduct = (editProduct) => {
     deleteOrganizationDialog.value = true;
 };
 
-const removePrimaryOrganization = () =>{
+const removePrimaryOrganization = () => {
     organization.value.primaryOrganizationId = 0;
 }
 
@@ -269,7 +273,8 @@ const onPrimaryOrganizationChange = (e) => {
                                 optionLabel="title" optionValue="id" emptyMessage="Ma'lumot topilmadi"
                                 class="w-18rem md:w-18rem"
                                 placeholder="Tashkilot nomidagi kamida 3ta harfni kiriting" />
-                            <Button @click="removePrimaryOrganization" severity="danger" icon="pi pi-trash" rounded class="mx-1" />
+                            <Button @click="removePrimaryOrganization" severity="danger" icon="pi pi-trash" rounded
+                                class="mx-1" />
                         </div>
 
                     </div>

@@ -5,7 +5,8 @@ import { UserService } from '@/service/UserService';
 import { OrganizationService } from '@/service/OrganizationService';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from "primevue/useconfirm";
-import Swal from 'sweetalert2';
+import { AuthService } from '@/service/AuthService'
+import { Swal } from 'sweetalert2'
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -51,7 +52,8 @@ const getRole = (roleName) => {
 
 const userCredentials = ref({
     login: '',
-    password: ''
+    password: '',
+    id: 0
 });
 
 const userAssignedOrganizations = ref([]);
@@ -69,6 +71,7 @@ const submitted = ref(false);
 
 const userService = new UserService();
 const organizationService = new OrganizationService();
+const authService = new AuthService();
 
 const filterAssignedOrganization = (filterEvent) => {
     if (filterEvent.value.length >= 3) {
@@ -106,6 +109,36 @@ const hideDialog = () => {
     submitted.value = false;
 };
 
+const confirmationUserCred = (event) => {
+    confirm.require({
+        target: event.currentTarget,
+        message: `Login, parolni saqlamoqchimisiz? (Parolni eslab qoling, u hashlab saqlanganligi tufayli uni qayta ko'rib bo'lmaydi.)`,
+        icon: 'pi pi-exclamation-triangle',
+        rejectClass: 'p-button-secondary p-button-outlined p-button-sm',
+        acceptClass: 'p-button-sm',
+        rejectLabel: 'Cancel',
+        acceptLabel: 'Save',
+        accept: () => {
+        }
+    });
+
+    confirm.require({
+        target: event.target,
+        group: 'headless',
+        accept: () => {
+            userCredentials.value.id = user.value.id;
+
+            authService.updateCred(userCredentials.value)
+                .then(() => {
+                    Swal.fire({ 
+                        title: "Login, parol muvaqqiyatli o'zgartirildi.", 
+                        icon: "success" 
+                    });
+                })
+        }
+    })
+}
+
 const showOrganizations = (id) => {
     haveCredential.value = false;
     userCredentials.value.login = '';
@@ -118,6 +151,7 @@ const showOrganizations = (id) => {
         if (data.login != null) {
             haveCredential.value = true;
             userCredentials.value.login = data.login
+            userCredentials.value.password = '';
         }
 
         dropdownOrganizations.value = data.organizations.map((org) => ({
@@ -205,7 +239,10 @@ const exportCSV = () => {
 const assignedOrganizationChange = (change) => {
     newAssignedOrganization.value.userId = user.value.id;
     newAssignedOrganization.value.organizationId = change.value;
-} 
+    newAssignedOrganization.value.organizationTitle =
+        dropdownOrganizations.value.find(org => org.id == newAssignedOrganization.value.organizationId)
+            .title
+}
 
 const newAssignedOrganization = ref({});
 
@@ -226,10 +263,10 @@ const assignOrganization = () => {
 
     userService.assignOrganization(userId, assignedOrganizationIds)
         .then((data) => {
+            userAssignedOrganizations.value.push(newAssignedOrganization.value)
             toast.add({ severity: 'success', summary: 'Muvaqqiyatli', detail: `Ma'lumot muvaqqiyatli qo'shildi`, life: 3000 });
-            console.log(data);
         })
-        .catch(err => console.log(err)); 
+        .catch(err => console.log(err));
 };
 
 const initFilters = () => {
@@ -376,7 +413,7 @@ const initFilters = () => {
                     </template>
                 </Dialog>
 
-                <Dialog v-model:visible="organizationsDialog" modal header="Login, parol va biriktirilgan korxonalar"
+                <Dialog v-model:visible="organizationsDialog" modal header="Login, parol va biriktirilgan tashkilotlar"
                     :breakpoints="{ '1199px': '80vw', '575px': '90vw' }">
                     <div class="">
                         <div class="field">
@@ -390,24 +427,27 @@ const initFilters = () => {
                                 required="true" autofocus toggleMask :feedback="false" />
                         </div>
 
-                        <Button v-if="haveCredential" label="O'zgartirish" severity="warning" raised />
-                        <Button v-else label="Yaratish" severity="primary" raised />
+                        <span @click=confirmationUserCred($event)>
+                            <Button v-if="haveCredential" label="O'zgartirish" severity="warning" raised />
+                            <Button v-else label="Yaratish" severity="primary" raised />
+
+                        </span>
                     </div>
                     <div>
                         <DataTable :value="userAssignedOrganizations">
                             <Column field="organizationTitle" header="Biriktirilgan korxona" />
-                            <Column field="id" >
+                            <Column field="id">
                                 <template #body="slotProps">
-                                    <Button @click="requireConfirmation($event, slotProps.data.organizationId)" class="ml-2" rounded severity="danger" icon="pi pi-trash" />
+                                    <Button @click="requireConfirmation($event, slotProps.data.organizationId)"
+                                        class="ml-2" rounded severity="danger" icon="pi pi-trash" />
                                 </template>
                             </Column>
                         </DataTable>
-                        <Dropdown v-model="newAssignedOrganization.organizationId" :options="dropdownOrganizations" optionValue="id" optionLabel="title" 
-                            filter @filter="filterAssignedOrganization"
-                            @change="assignedOrganizationChange"
-                            emptyMessage="Ma'lumot topilmadi"
+                        <Dropdown v-model="newAssignedOrganization.organizationId" :options="dropdownOrganizations"
+                            optionValue="id" optionLabel="title" filter @filter="filterAssignedOrganization"
+                            @change="assignedOrganizationChange" emptyMessage="Ma'lumot topilmadi"
                             placeholder="Tashkilotni tanlang" class="w-14rem mt-1"></Dropdown>
-                        <Button @click="assignOrganization" class="ml-2" label="Qo'shish"/>
+                        <Button @click="assignOrganization" class="ml-2" label="Qo'shish" />
                     </div>
                 </Dialog>
 
@@ -416,7 +456,7 @@ const initFilters = () => {
                         <div class="border-round p-3">
                             <span>{{ message.message }}</span>
                             <div class="flex align-items-center gap-2 mt-3">
-                                <Button label="O'chirish" @click="acceptCallback" size="small"></Button>
+                                <Button severity="danger" label="O'chirish" @click="acceptCallback" size="small"></Button>
                                 <Button label="Bekor qilish" outlined @click="rejectCallback" severity="secondary"
                                     size="small" text></Button>
                             </div>
