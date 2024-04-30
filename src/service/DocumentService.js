@@ -20,15 +20,41 @@ export class DocumentService{
         ).then(res => res.data);
     }
 
-    getOrganizationDocuments(id, paramaters) {
+    getOrganizationDocuments(id, queryParams) {
         return http.get(
             `${this.endpoint}`,
             {
                 params: {
+                    limit: queryParams.limit,
+                    page: queryParams.page,
                     organizationId: id,
-                    limit: paramaters.limit
+                    documentTypeId: queryParams.documentTypeId,
+                    title: queryParams.title,
+                    registerNumber: queryParams.registeredNumber,
+                    startDate: queryParams.startDate,
+                    endDate: queryParams.endDate,
+                    orderBy: queryParams.orderBy,
+                    isDescending: queryParams.isDescending
                 }
             }
         ).then(response => response.data);
+    }
+
+    getDocumentById(id) {
+        return http.get(`${this.endpoint}/${id}`)
+            .then((res) => {
+                return res.data;
+            });
+    }
+
+    deleteDocumentById(id) {
+        return http.delete(`${this.endpoint}/${id}`)
+            .then((res) => res.data);
+    }
+
+    editDocument(document) {
+        return http.put(
+            `${this.endpoint}`, document
+        ).then(res => res.data);
     }
 }

@@ -29,19 +29,25 @@ const setColorOptions = () => {
 
 const setChart = () => {
     barData.value = {
-        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+        labels: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'],
         datasets: [
             {
-                label: 'My First dataset',
+                label: 'Nizom',
                 backgroundColor: documentStyle.getPropertyValue('--primary-500'),
                 borderColor: documentStyle.getPropertyValue('--primary-500'),
-                data: [65, 59, 80, 81, 56, 55, 40]
+                data: [65, 59, 80, 81, 56, 55, 40, 59, 80, 81, 56, 55, 40]
             },
             {
-                label: 'My Second dataset',
+                label: 'Buyruq',
                 backgroundColor: documentStyle.getPropertyValue('--primary-200'),
                 borderColor: documentStyle.getPropertyValue('--primary-200'),
-                data: [28, 48, 40, 19, 86, 27, 90]
+                data: [28, 48, 40, 19, 86, 27, 90, 48, 40, 19, 86, 27, 90]
+            },
+            {
+                label: 'Jami',
+                backgroundColor: documentStyle.getPropertyValue('--secondary-200'),
+                borderColor: 'rgb(249, 115, 22)',
+                data: [128, 148, 140, 119, 186, 127, 190, 148, 140, 119, 186, 127, 190]
             }
         ]
     };

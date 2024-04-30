@@ -6,7 +6,8 @@ import { OrganizationService } from '@/service/OrganizationService';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from "primevue/useconfirm";
 import { AuthService } from '@/service/AuthService'
-import { Swal } from 'sweetalert2'
+import Swal from 'sweetalert2';
+
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -112,31 +113,26 @@ const hideDialog = () => {
 const confirmationUserCred = (event) => {
     confirm.require({
         target: event.currentTarget,
-        message: `Login, parolni saqlamoqchimisiz? (Parolni eslab qoling, u hashlab saqlanganligi tufayli uni qayta ko'rib bo'lmaydi.)`,
-        icon: 'pi pi-exclamation-triangle',
-        rejectClass: 'p-button-secondary p-button-outlined p-button-sm',
+        group: 'templating',
+        message: `Login parolni saqlamoqchimisiz? (Parolni eslab qoling, oyna yopilgandan keyin parol qayta ko'rinmaydi.)`,
+        icon: 'pi pi-exclamation-circle',
+        acceptIcon: 'pi pi-check',
+        rejectIcon: 'pi pi-times',
+        acceptLabel: 'Saqlash',
+        rejectLabel: 'Bekor qilish',
+        rejectClass: 'p-button-outlined p-button-sm',
         acceptClass: 'p-button-sm',
-        rejectLabel: 'Cancel',
-        acceptLabel: 'Save',
-        accept: () => {
-        }
-    });
-
-    confirm.require({
-        target: event.target,
-        group: 'headless',
         accept: () => {
             userCredentials.value.id = user.value.id;
-
             authService.updateCred(userCredentials.value)
                 .then(() => {
-                    Swal.fire({ 
-                        title: "Login, parol muvaqqiyatli o'zgartirildi.", 
-                        icon: "success" 
+                    Swal.fire({
+                        title: "Login, parol muvaqqiyatli o'zgartirildi.",
+                        icon: "success"
                     });
                 })
         }
-    })
+    });
 }
 
 const showOrganizations = (id) => {
@@ -262,7 +258,7 @@ const assignOrganization = () => {
     const assignedOrganizationIds = [newAssignedOrganization.value.organizationId]
 
     userService.assignOrganization(userId, assignedOrganizationIds)
-        .then((data) => {
+        .then(() => {
             userAssignedOrganizations.value.push(newAssignedOrganization.value)
             toast.add({ severity: 'success', summary: 'Muvaqqiyatli', detail: `Ma'lumot muvaqqiyatli qo'shildi`, life: 3000 });
         })
@@ -430,7 +426,6 @@ const initFilters = () => {
                         <span @click=confirmationUserCred($event)>
                             <Button v-if="haveCredential" label="O'zgartirish" severity="warning" raised />
                             <Button v-else label="Yaratish" severity="primary" raised />
-
                         </span>
                     </div>
                     <div>
@@ -456,10 +451,21 @@ const initFilters = () => {
                         <div class="border-round p-3">
                             <span>{{ message.message }}</span>
                             <div class="flex align-items-center gap-2 mt-3">
-                                <Button severity="danger" label="O'chirish" @click="acceptCallback" size="small"></Button>
+                                <Button severity="danger" label="O'chirish" @click="acceptCallback"
+                                    size="small"></Button>
                                 <Button label="Bekor qilish" outlined @click="rejectCallback" severity="secondary"
                                     size="small" text></Button>
                             </div>
+                        </div>
+                    </template>
+                </ConfirmPopup>
+
+                <ConfirmPopup group="templating">
+                    <template #message="slotProps">
+                        <div
+                            class="flex flex-column align-items-center w-full gap-3 border-bottom-1 surface-border p-3 mb-3 pb-0">
+                            <i :class="slotProps.message.icon" class="text-6xl text-primary-500"></i>
+                            <p>{{ slotProps.message.message }}</p>
                         </div>
                     </template>
                 </ConfirmPopup>

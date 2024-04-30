@@ -2,12 +2,14 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.js';
+import { useConfirm } from 'primevue/useconfirm';
 
 const outsideClickListener = ref(null);
 const topbarMenuActive = ref(false);
 const router = useRouter();
 const authStore = useAuthStore();
 const profileMenu = ref(null);
+const confirm = useConfirm();
 
 const profileMenuItems = computed(() => {
     return authStore.isSuperAdmin ? [
@@ -78,8 +80,23 @@ const onSignInMenuButton = () => {
     router.push({ name: 'login' });
 };
 
-const onSignOutMenuButton = () => {
-    authStore.logout();
+const onSignOutMenuButton = (event) => {
+    
+    confirm.require({
+        target: event.target,
+        group: 'templating',
+        message: 'Haqiqatdan ham tizimdan chiqmoqchimisiz?',
+        icon: 'pi pi-exclamation-circle',
+        acceptIcon: 'pi pi-check',
+        rejectIcon: 'pi pi-times',
+        acceptLabel: 'Chiqish',
+        rejectLabel: 'Bekor qilish',
+        rejectClass: 'p-button-outlined p-button-sm',
+        acceptClass: 'p-button-sm',
+        accept: () => {
+            authStore.logout();
+        },
+    });
 };
 
 const topbarMenuClasses = computed(() => {
@@ -141,12 +158,20 @@ const isOutsideClicked = (event) => {
                 <span>Profile</span>
             </button>
             <Menu class="text-2xl" ref="profileMenu" :model="profileMenuItems" :popup="true" />
-            <button @click="onSignOutMenuButton()" class="p-link layout-topbar-button">
+            <button @click="onSignOutMenuButton($event)" class="p-link layout-topbar-button">
                 <i class="pi pi-sign-out"></i>
                 <span>Tizimdan chiqish</span>
             </button>
         </div>
     </div>
+    <ConfirmPopup group="templating">
+        <template #message="slotProps">
+            <div class="flex flex-column align-items-center w-full gap-3 border-bottom-1 surface-border p-3 mb-3 pb-0">
+                <i :class="slotProps.message.icon" class="text-6xl text-primary-500"></i>
+                <p>{{ slotProps.message.message }}</p>
+            </div>
+        </template>
+    </ConfirmPopup>
 </template>
 
 <style lang="scss" scoped></style>
