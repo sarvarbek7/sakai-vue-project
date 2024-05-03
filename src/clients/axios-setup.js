@@ -5,7 +5,6 @@ import Swal from 'sweetalert2';
 const instance = axios.create({
     baseURL: 'https://localhost:7250/api',
 })
-
 instance.interceptors.request.use(function (config) {
     // Do something before request is sent
     const token = localStorage.getItem('accessToken');

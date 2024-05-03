@@ -101,7 +101,6 @@ const onSelectedFiles = (event) => {
     files.value.forEach((file) => {
         totalSize.value += parseInt(formatSize(file.size));
 
-        console.log(now);
         documents.value.push({
             documentTypeId: documentTypes.value[0].id,
             title: getFileNameWithoutExtionsion(file.name),
@@ -133,8 +132,15 @@ const uploadEvent = (callback) => {
             totalSize.value = 0;
             totalSizePercent.value = 0;
             documents.value = [];
-        }).catch(() => {
-            Swal.fire({ title: "Hujjatlar yuklashda xatolik sodir bo'ldi.", icon: "error" })
+        }).catch((err) => {
+            const ext = err.response.data.errors["Document.WrongType"];
+            if (err.code === "ERR_BAD_REQUEST" && 
+                ext != null){
+                Swal.fire({ title: `${ext} kengaytmali fayllarni yuklash mumkin emas.`, icon: "error" })                    
+                }
+            else{
+                Swal.fire({ title: "Hujjatlar yuklashda xatolik sodir bo'ldi.", icon: "error" })
+            }
         })
 };
 
@@ -240,7 +246,7 @@ const documentDelete = (id) => {
         rejectLabel: 'Bekor qilish',
         acceptLabel: `O'chirish`,
         accept: () => {
-            documentService.deleteDocumentById(id)
+            documentService.deleteDocumentById(id, organizationId.value)
                 .then((data) => {
                     storedDocuments.value =
                         storedDocuments.value.filter(doc => doc.id !== id);
@@ -336,7 +342,7 @@ const loadData = (filterOptions, sortOptions, pageOptions) => {
 
     }
 
-    if (sortOptions.field !== null) {
+    if (sortOptions.field !== null && sortOptions.field.length > 0) {
         queryParams.orderBy = sortOptions.field;
 
         if (!sortOptions.ascending) {
@@ -355,10 +361,17 @@ const loadDocuments = () => {
     loadData(filterModel.value, sort.value, page.value);
 }
 
-const filterChange = (text) => {
-    if (text.length > 0) {
+const filterChange = (inputEvent) => {
+    if (inputEvent.data === null) {
         loadDocuments();
     }
+    else if (inputEvent.target.value.length >= 3) {
+        loadDocuments();
+    }
+}
+
+const downloadDocumentLink = (id) => {
+    return `${documentService.apiendpoint}/download?id=${id}`
 }
 
 </script>
@@ -367,7 +380,7 @@ const filterChange = (text) => {
     <div class="card">
         <Toast />
         <ConfirmPopup></ConfirmPopup>
-        <FileUpload name="documents[]" :multiple="true" @select="onSelectedFiles" customUpload>
+        <FileUpload accept=".pdf, .doc, .docx, .xlsx, .xls, .ppt, .epub, .csv" name="documents[]" :multiple="true" @select="onSelectedFiles" customUpload>
             <template #header="{ chooseCallback, uploadCallback, clearCallback, files }">
                 <div class="flex flex-wrap justify-content-between align-items-center flex-1 gap-2">
                     <div class="flex gap-2">
@@ -479,12 +492,19 @@ const filterChange = (text) => {
                         <span class="mb-1">
                             Hujjat nomi
                         </span>
-                        <InputText @update:model-value="filterChange" v-model="filterModel.title"
+                        <InputText @input="filterChange($event)" v-model="filterModel.title"
                             placeholder="Hujjat nomidagi 3ta harfni kiriting"></InputText>
                     </div>
                 </template>
                 <template #body="slotProps">
-                    {{ !slotProps.data.isPrivate ? slotProps.data.title : 'Maxfiy' }}
+                    <div class="flex align-items-center gap-1" >
+                        <span style="width: 85%; word-break:break-all" class="text-xl">
+                            {{ slotProps.data.title }}
+                        </span>
+                        <a style="color: rgb(16, 185, 129)"  :href="downloadDocumentLink(slotProps.data.id)">
+                            <i class="pi pi-download"  style="font-size: 1.5rem;"></i>
+                        </a>
+                    </div>
                 </template>
             </Column>
             <Column sortable field="registeredNumber">
@@ -493,7 +513,7 @@ const filterChange = (text) => {
                         <span class="mb-1">
                             Ro'yhatga olingan raqami
                         </span>
-                        <InputText @update:model-value="filterChange" v-model="filterModel.registeredNumber"
+                        <InputText @input="filterChange($event)" v-model="filterModel.registeredNumber"
                             placeholder="Hujjat raqamidagi 3ta harfni kiriting"></InputText>
                     </div>
                 </template>

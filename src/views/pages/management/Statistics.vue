@@ -240,6 +240,7 @@ watch(
 
 <template>
     <div class="grid p-fluid">
+        
         <div class="col-12 xl:col-6">
             <div class="card">
                 <h5>Linear Chart</h5>

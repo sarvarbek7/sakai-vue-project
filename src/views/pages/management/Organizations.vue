@@ -27,7 +27,7 @@ onBeforeMount(() => {
     initFilters();
 });
 onMounted(() => {
-    organizationService.getOrganizations().then((data) => {
+    organizationService.getOrganizations({limit: pageSize.value}).then((data) => {
         organizations.value = data.organizations;
         pageSize.value = data.pageSize;
         pageToken.value = data.pageToken;
@@ -111,10 +111,6 @@ const removePrimaryOrganization = () => {
     organization.value.primaryOrganizationId = 0;
 }
 
-const confirmDeletePrimaryOrganization = () => {
-
-};
-
 const deleteSelectedOrganizations = () => {
     organizations.value = organizations.value.filter((val) => !selectedOrganizations.value.includes(val));
     deleteOrganizationsDialog.value = false;
@@ -176,6 +172,79 @@ const onPrimaryOrganizationChange = (e) => {
         dropdownOrganizations.value.filter(org => org.id === e.value)[0];
 }
 
+const page = ref({
+    limit: pageSize.value,
+    page: 1
+});
+
+const sort = ref({
+    field: '',
+    ascending: true
+});
+
+const onSort = (event) => {
+    if (event.sortField !== null) {
+        sort.value.field = event.sortField;
+
+        if (event.sortOrder < 0) {
+            sort.value.ascending = false;
+        }
+        else {
+            sort.value.ascending = true;
+        }
+
+        loadData(filterModel.value, sort.value, page.value);
+    }
+    else {
+        sort.value.field = event.sortField;
+        sort.value.ascending = true;
+    }
+}
+
+const filterModel = ref({
+    title: null,
+});
+
+const loadData = (filterOptions, sortOptions, pageOptions) => {
+    const queryParams = {
+        limit: pageOptions.limit,
+        page: pageOptions.page
+    };
+
+    if (filterOptions.title !== null && filterOptions.title.length > 0) {
+        queryParams.title = filterOptions.title;
+    }
+
+    if (sortOptions.field !== null && sortOptions.field.length > 0) {
+        queryParams.orderBy = sortOptions.field;
+
+        if (!sortOptions.ascending) {
+            queryParams.isDescending = true;
+        }
+    }
+    organizationService.getOrganizations(queryParams).then((data) => {
+            organizations.value = data.organizations;
+            pageSize.value = data.pageSize
+            totalOrganizationsCount.value = data.total
+        });
+}
+
+const filterChange = (inputEvent) => {
+    if (inputEvent.data === null) {
+        loadData(filterModel.value, sort.value, page.value);
+    }
+    else if (inputEvent.target.value.length >= 3) {
+        loadData(filterModel.value, sort.value, page.value);
+        console.log(filterModel.value);
+    }
+}
+
+const onPage = (event) => {
+    page.value.limit = event.rows;
+    page.value.page = event.page + 1;
+
+    loadData(filterModel.value, sort.value, page.value);
+}
 </script>
 
 <template>
@@ -202,16 +271,20 @@ const onPrimaryOrganizationChange = (e) => {
                 </Toolbar>
 
                 <DataTable ref="dt" :value="organizations" v-model:selection="selectedOrganizations" dataKey="id"
-                    :paginator="true" :rows="pageSize" :filters="filters"
+                    :paginator="true" :rows="pageSize" 
+                    :totalRecords="totalOrganizationsCount"
+                    removableSort
+                    lazy 
+                    @page="onPage($event)"
+                    @sort="onSort($event)"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    :rowsPerPageOptions="[5, 10, 25]"
                     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} employees">
                     <template #header>
                         <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
                             <h5 class="m-0">Tashkilotlarni boshqarish</h5>
                             <IconField iconPosition="left" class="block mt-2 md:mt-0">
                                 <InputIcon class="pi pi-search" />
-                                <InputText class="w-full sm:w-auto" v-model="filters['global'].value"
+                                <InputText @input="filterChange($event)" class="w-full sm:w-auto" v-model="filterModel.title"
                                     placeholder="Search..." />
                             </IconField>
                         </div>
@@ -225,7 +298,7 @@ const onPrimaryOrganizationChange = (e) => {
                             {{ slotProps.data.title }}
                         </template>
                     </Column>
-                    <Column field="primaryOrganizationTitle" header="Yuqori tashkilot" :sortable="true"
+                    <Column field="primaryOrganizationTitle" header="Yuqori tashkilot"
                         headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
                             <span class="p-column-title">Yuqori Tashkilot</span>
@@ -239,7 +312,7 @@ const onPrimaryOrganizationChange = (e) => {
                             {{ slotProps.data.physicalIdentity }}
                         </template>
                     </Column>
-                    <Column field="details" header="Qo'shimcha ma'lumot" :sortable="true"
+                    <Column field="details" header="Qo'shimcha ma'lumot"
                         headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
                             <span class="p-column-title">Qo'shimcha ma'lumot</span>

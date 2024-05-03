@@ -28,12 +28,12 @@ const openDocuments = (organizationId) => {
 <template>
     <div class="grid gap-4">
         <Card v-for="organization in organizations" :key="organization.id" style="width: 25rem; overflow: hidden">
-            <template #header>
-                <div class="flex justify-content-center pt-3">
-                    <img height="200px" width="260px" style="object-fit: cover;" alt="user header"
-                        src="/demo/images/galleria/galleria2.jpg">
-                </div>
-            </template>
+                <template #header>
+                    <div class="flex justify-content-center pt-3">
+                        <img height="200px" width="260px" style="object-fit: cover;" alt="user header"
+                            src="/demo/images/galleria/galleria2.jpg">
+                    </div>
+                </template>
             <template #title>
                 <h3>{{ organization.title }}</h3>
             </template>

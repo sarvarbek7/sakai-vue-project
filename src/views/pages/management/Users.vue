@@ -259,7 +259,13 @@ const assignOrganization = () => {
 
     userService.assignOrganization(userId, assignedOrganizationIds)
         .then(() => {
-            userAssignedOrganizations.value.push(newAssignedOrganization.value)
+            userAssignedOrganizations.value.push(
+                {
+                    userId: userId,
+                    organizationId: newAssignedOrganization.value.organizationId,
+                    organizationTitle: newAssignedOrganization.value.organizationTitle
+                });
+                
             toast.add({ severity: 'success', summary: 'Muvaqqiyatli', detail: `Ma'lumot muvaqqiyatli qo'shildi`, life: 3000 });
         })
         .catch(err => console.log(err));
@@ -269,6 +275,81 @@ const initFilters = () => {
     filters.value = {
         global: { value: null, matchMode: FilterMatchMode.CONTAINS }
     }
+}
+
+
+const page = ref({
+    limit: pageSize.value,
+    page: 1
+});
+
+const sort = ref({
+    field: '',
+    ascending: true
+});
+
+const onSort = (event) => {
+    if (event.sortField !== null) {
+        sort.value.field = event.sortField;
+
+        if (event.sortOrder < 0) {
+            sort.value.ascending = false;
+        }
+        else {
+            sort.value.ascending = true;
+        }
+
+        loadData(filterModel.value, sort.value, page.value);
+    }
+    else {
+        sort.value.field = event.sortField;
+        sort.value.ascending = true;
+    }
+}
+
+const filterModel = ref({
+    keyword: null,
+});
+
+const loadData = (filterOptions, sortOptions, pageOptions) => {
+    const queryParams = {
+        limit: pageOptions.limit,
+        page: pageOptions.page
+    };
+
+    if (filterOptions.keyword !== null && filterOptions.keyword.length > 0) {
+        queryParams.keyword = filterOptions.keyword;
+    }
+
+    if (sortOptions.field !== null && sortOptions.field.length > 0) {
+        queryParams.orderBy = sortOptions.field;
+
+        if (!sortOptions.ascending) {
+            queryParams.isDescending = true;
+        }
+    }
+    userService.getUsers(queryParams).then((data) => {
+            users.value = data.users;
+            pageSize.value = data.pageSize
+            totalUsersCount.value = data.total
+        });
+}
+
+const filterChange = (inputEvent) => {
+    if (inputEvent.data === null) {
+        loadData(filterModel.value, sort.value, page.value);
+    }
+    else if (inputEvent.target.value.length >= 3) {
+        loadData(filterModel.value, sort.value, page.value);
+        console.log(filterModel.value);
+    }
+}
+
+const onPage = (event) => {
+    page.value.limit = event.rows;
+    page.value.page = event.page + 1;
+
+    loadData(filterModel.value, sort.value, page.value);
 }
 
 </script>
@@ -293,16 +374,20 @@ const initFilters = () => {
                 </Toolbar>
 
                 <DataTable ref="dt" :value="users" v-model:selection="selectedUsers" dataKey="id" :paginator="true"
-                    :rows="10" :filters="filters"
-                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    :rowsPerPageOptions="[5, 10, 25]"
+                    :rows="pageSize"
+                    lazy
+                    :total-records="totalUsersCount"
+                    @page="onPage($event)"
+                    @sort="onSort($event)"
+                    removable-sort
+                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport"
                     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} employees">
                     <template #header>
                         <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
                             <h5 class="m-0">Xodimlarni boshqarish</h5>
                             <IconField iconPosition="left" class="block mt-2 md:mt-0">
                                 <InputIcon class="pi pi-search" />
-                                <InputText class="w-full sm:w-auto" v-model="filters['global'].value"
+                                <InputText @input="filterChange($event)" class="w-full sm:w-auto" v-model="filterModel.keyword"
                                     placeholder="Search..." />
                             </IconField>
                         </div>
