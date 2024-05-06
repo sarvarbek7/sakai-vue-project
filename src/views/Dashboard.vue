@@ -345,7 +345,7 @@ const expanded = (subordinate) => {
                                                 <td>
                                                     <Button @click="expanded(sub)" class="ml-4 p-0"
                                                         style="width: 16px; border-radius: 0"
-                                                        :icon="!sub.isExpanded ? 'pi pi-angle-right' : 'pi pi-minus'"
+                                                        :icon="!sub.isExpanded ? 'pi pi-plus' : 'pi pi-minus'"
                                                         severity="secondary"></Button>
                                                     {{ sub.title }}
                                                 </td>

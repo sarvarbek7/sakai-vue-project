@@ -34,4 +34,9 @@ export class OrganizationService {
         return http.delete(`${this.endpoint}/${id}`)
             .then((res) => res.data);
     }
+
+    getAuditDetailsById(id){
+        return http.get(`${this.endpoint}/${id}/audit`)
+            .then((res) => res.data);
+    }
 }

@@ -47,4 +47,9 @@ export class UserService {
         return http.delete(`${this.endpoint}/${userId}/unassign-organization/${organizationId}`)
             .then((res) => res.data);
     }
+
+    getAuditDetailsById(id){
+        return http.get(`${this.endpoint}/${id}/audit`)
+            .then((res) => res.data);
+    }
 }

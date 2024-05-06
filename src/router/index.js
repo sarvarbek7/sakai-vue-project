@@ -33,9 +33,9 @@ const router = createRouter({
                             component: () => import('@/views/pages/management/Documents.vue')
                         },
                         {
-                            path: 'statistics',
-                            name: 'statistics-management',
-                            component: () => import('@/views/pages/management/Statistics.vue')
+                            path: 'recycle-bin',
+                            name: 'recycle-bin-management',
+                            component: () => import('@/views/pages/management/RecycleBin.vue')
                         }
                     ]
                 },

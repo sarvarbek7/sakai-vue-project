@@ -41,11 +41,11 @@ const profileMenuItems = computed(() => {
             }
         },
         {
-            label: 'Statistika',
-            icon: 'pi pi-chart-line',
+            label: 'Savatcha',
+            icon: 'pi pi-trash',
             command: () => {
                 router.push({
-                    name: 'statistics-management'
+                    name: 'recycle-bin-management'
                 });
             }
         }

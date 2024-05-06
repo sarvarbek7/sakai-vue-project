@@ -27,7 +27,7 @@ onBeforeMount(() => {
     initFilters();
 });
 onMounted(() => {
-    organizationService.getOrganizations({limit: pageSize.value}).then((data) => {
+    organizationService.getOrganizations({ limit: pageSize.value }).then((data) => {
         organizations.value = data.organizations;
         pageSize.value = data.pageSize;
         pageToken.value = data.pageToken;
@@ -223,10 +223,10 @@ const loadData = (filterOptions, sortOptions, pageOptions) => {
         }
     }
     organizationService.getOrganizations(queryParams).then((data) => {
-            organizations.value = data.organizations;
-            pageSize.value = data.pageSize
-            totalOrganizationsCount.value = data.total
-        });
+        organizations.value = data.organizations;
+        pageSize.value = data.pageSize
+        totalOrganizationsCount.value = data.total
+    });
 }
 
 const filterChange = (inputEvent) => {
@@ -245,6 +245,30 @@ const onPage = (event) => {
 
     loadData(filterModel.value, sort.value, page.value);
 }
+
+const op = ref();
+const auditInfo = ref(null);
+
+const showAuditInfo = (event, id) => {
+    if (auditInfo.value == null || auditInfo.value.id != id){
+        organizationService.getAuditDetailsById(id)
+        .then(data => {
+            auditInfo.value = data;
+            auditInfo.value.id = id;
+        });
+    }
+    
+    op.value.toggle(event);
+}
+
+const formatDateTime = (date) => {
+    if (date != null) {
+        let parts = date.split('T');
+
+        return `${parts[0]} ${parts[1].substring(0, 8)}`;
+    }
+}
+
 </script>
 
 <template>
@@ -271,12 +295,8 @@ const onPage = (event) => {
                 </Toolbar>
 
                 <DataTable ref="dt" :value="organizations" v-model:selection="selectedOrganizations" dataKey="id"
-                    :paginator="true" :rows="pageSize" 
-                    :totalRecords="totalOrganizationsCount"
-                    removableSort
-                    lazy 
-                    @page="onPage($event)"
-                    @sort="onSort($event)"
+                    :paginator="true" :rows="pageSize" :totalRecords="totalOrganizationsCount" removableSort lazy
+                    @page="onPage($event)" @sort="onSort($event)"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} employees">
                     <template #header>
@@ -284,8 +304,8 @@ const onPage = (event) => {
                             <h5 class="m-0">Tashkilotlarni boshqarish</h5>
                             <IconField iconPosition="left" class="block mt-2 md:mt-0">
                                 <InputIcon class="pi pi-search" />
-                                <InputText @input="filterChange($event)" class="w-full sm:w-auto" v-model="filterModel.title"
-                                    placeholder="Search..." />
+                                <InputText @input="filterChange($event)" class="w-full sm:w-auto"
+                                    v-model="filterModel.title" placeholder="Search..." />
                             </IconField>
                         </div>
                     </template>
@@ -312,8 +332,7 @@ const onPage = (event) => {
                             {{ slotProps.data.physicalIdentity }}
                         </template>
                     </Column>
-                    <Column field="details" header="Qo'shimcha ma'lumot"
-                        headerStyle="width:14%; min-width:10rem;">
+                    <Column field="details" header="Qo'shimcha ma'lumot" headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
                             <span class="p-column-title">Qo'shimcha ma'lumot</span>
                             {{ slotProps.data.details ?? "Qo'shimcha ma'lumot yo'q" }}
@@ -321,10 +340,13 @@ const onPage = (event) => {
                     </Column>
                     <Column headerStyle="min-width:10rem; width: 10%">
                         <template #body="slotProps">
-                            <Button icon="pi pi-pencil" class="mr-2" severity="success" rounded
+                            <Button icon="pi pi-pencil" severity="success" rounded
                                 @click="editOrganization(slotProps.data)" />
-                            <Button icon="pi pi-trash" class="mt-2" severity="danger" rounded
+                            <Button icon="pi pi-trash" class="mt-2 mx-1" severity="danger" rounded
                                 @click="confirmDeleteProduct(slotProps.data)" />
+                            <Button icon="pi pi-info-circle" class="mt-2" severity="info" rounded
+                                @click="showAuditInfo($event, slotProps.data.id)" />
+
                         </template>
                     </Column>
                 </DataTable>
@@ -397,4 +419,16 @@ const onPage = (event) => {
             </div>
         </div>
     </div>
+
+    <OverlayPanel ref="op">
+        <div class="flex flex-column">
+            <span>Kim tomonidan yaratilgan: {{ auditInfo.createdByFullName ?? `Ma'lumot yo'q` }}</span>
+            <span>Qachon yaratilgan: {{ formatDateTime(auditInfo.createdAt) }}</span>
+
+            <template v-if="auditInfo.updatedAt != null">
+                <span>Kim tomonidan o'zgartirilgan: {{ auditInfo.updatedByFullName ?? `Ma'lumot yo'q` }}</span>
+                <span>Qachon o'zgartirilgan: {{ formatDateTime(auditInfo.updatedAt) }}</span>
+            </template>
+        </div>
+    </OverlayPanel>
 </template>
