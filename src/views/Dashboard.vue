@@ -1,10 +1,12 @@
 <script setup>
 import { onMounted, reactive, ref, watch } from 'vue';
+import {useRouter} from 'vue-router';
 import { DocumentService } from '@/service/DocumentService';
 import { useLayout } from '@/layout/composables/layout';
 import { StatisticsService } from '@/service/StatisticsService';
 
 const now = new Date();
+const router = useRouter();
 
 const year = ref(now.getFullYear());
 const years = ref([]);
@@ -286,9 +288,9 @@ const expanded = (subordinate) => {
                         <template #body="slotProps">
                             <div class="flex align-items-center gap-1" v-if="!slotProps.data.isPrivate">
                                 <span style="width: 90%; word-break:break-all" class="text-xl">
-                                    {{ slotProps.data.title }}
+                                    {{ !slotProps.data.isPrivate ? slotProps.data.title : 'Maxfiy' }}
                                 </span>
-                                <a style="color: rgb(16, 185, 129)" :href="downloadDocumentLink(slotProps.data.id)">
+                                <a v-if="!slotProps.data.isPrivate" style="color: rgb(16, 185, 129)" :href="downloadDocumentLink(slotProps.data.id)">
                                     <i class="pi pi-download" style="font-size: 1.5rem;"></i>
                                 </a>
                             </div>
@@ -304,7 +306,7 @@ const expanded = (subordinate) => {
                     <Column style="width: 14%" field="documentType.title" header="Hujjat turi"></Column>
                 </DataTable>
                 <div class="flex mt-2 justify-content-end">
-                    <Button class="p-2 px-4 text-xl" label="Batafsil"></Button>
+                    <Button @click="router.push({name: 'documents'})" class="p-2 px-4 text-xl" label="Barchasi" />
                 </div>
             </div>
         </div>

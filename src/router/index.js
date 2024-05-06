@@ -64,9 +64,9 @@ const router = createRouter({
                     component: () => import('@/views/Dashboard.vue')
                 },
                 {
-                    path: '/blocks',
-                    name: 'blocks',
-                    component: () => import('@/views/utilities/Blocks.vue')
+                    path: '/documents',
+                    name: 'documents',
+                    component: () => import('@/views/pages/Documents.vue')
                 },
                 {
                     path: '/utilities/icons',

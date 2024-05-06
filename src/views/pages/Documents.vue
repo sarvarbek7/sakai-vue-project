@@ -1,32 +1,44 @@
 <script setup>
+import { ref, onMounted } from 'vue';
 import { DocumentService } from '@/service/DocumentService';
-import { ref, onMounted } from 'vue'
 
 onMounted(() => {
     documentService.getDocumentTypes()
         .then(docTypes => {
             documentTypes.value = docTypes.documentTypes;
-            documentTypes.value.push({
-                id: -1,
-                title: 'Barchasi'
-            })
         });
 
-    loadDocuments();
-})
+    documentService.getDocuments({
+        limit: pageSize.value
+    })
+        .then(data => {
+            storedDocuments.value = data.documents;
+            pageSize.value = data.pageSize
+            totalRecords.value = data.total
+        });
+});
 
-const documents = ref([]);
+const documentService = new DocumentService();
+const now = new Date();
+const storedDocuments = ref([])
 const documentTypes = ref([]);
 const pageSize = ref(25);
 const totalRecords = ref(0);
-const documentService = new DocumentService();
 
-const filterModel = ref({
-    title: null,
-    registeredNumber: null,
-    documentTypeId: -1,
-    dateinterval: null
-});
+const onPage = (event) => {
+    page.value.limit = event.rows;
+    page.value.page = event.page + 1;
+
+    documentService.getDocuments({
+        limit: event.rows,
+        page: event.page + 1
+    })
+        .then(data => {
+            storedDocuments.value = data.documents;
+            pageSize.value = data.pageSize
+            totalRecords.value = data.total
+        });
+}
 
 const page = ref({
     limit: pageSize.value,
@@ -38,7 +50,31 @@ const sort = ref({
     ascending: true
 });
 
-const now = new Date();
+const onSort = (event) => {
+    if (event.sortField !== null) {
+        sort.value.field = event.sortField;
+
+        if (event.sortOrder < 0) {
+            sort.value.ascending = false;
+        }
+        else {
+            sort.value.ascending = true;
+        }
+
+        loadData(filterModel.value, sort.value, page.value);
+    }
+    else {
+        sort.value.field = event.sortField;
+        sort.value.ascending = true;
+    }
+}
+
+const filterModel = ref({
+    title: null,
+    registeredNumber: null,
+    documentTypeId: null,
+    dateinterval: null,
+});
 
 const formatDate = (date) => {
     try {
@@ -50,44 +86,6 @@ const formatDate = (date) => {
     catch {
         return date;
     }
-}
-
-const onSort = (event) => {
-    if (event.sortField !== null) {
-        sort.value.field = event.sortField;
-
-        if (event.sortOrder < 0) {
-            sort.value.ascending = false;
-        }
-        else {
-            sort.value.ascending = true;
-        }
-        loadDocuments();
-    }
-    else {
-        sort.value.field = event.sortField;
-        sort.value.ascending = true;
-    }
-}
-
-const onPage = (event) => {
-    page.value.limit = event.rows;
-    page.value.page = event.page + 1;
-
-    loadDocuments();
-}
-
-const filterChange = (inputEvent) => {
-    if (inputEvent.data === null) {
-        loadDocuments();
-    }
-    else if (inputEvent.target.value.length >= 3) {
-        loadDocuments();
-    }
-}
-
-const loadDocuments = () => {
-    loadData(filterModel.value, sort.value, page.value);
 }
 
 const loadData = (filterOptions, sortOptions, pageOptions) => {
@@ -104,7 +102,7 @@ const loadData = (filterOptions, sortOptions, pageOptions) => {
         queryParams.registeredNumber = filterOptions.registeredNumber;
     }
 
-    if (filterOptions.documentTypeId !== null && filterOptions.documentTypeId !== -1) {
+    if (filterOptions.documentTypeId !== null) {
         queryParams.documentTypeId = filterOptions.documentTypeId;
     }
 
@@ -127,50 +125,43 @@ const loadData = (filterOptions, sortOptions, pageOptions) => {
         }
     }
     documentService.getDocuments(queryParams).then((data) => {
-        documents.value = data.documents;
+        storedDocuments.value = data.documents;
         pageSize.value = data.pageSize
         totalRecords.value = data.total
     });
 }
 
-const op = ref();
-const auditInfo = ref(null);
-
-const showAuditInfo = (event, id) => {
-    if (auditInfo.value == null || auditInfo.value.id != id) {
-        documentService.getAuditDetailsById(id)
-            .then(data => {
-                auditInfo.value = data;
-                auditInfo.value.id = id;
-            });
-    }
-
-    op.value.toggle(event);
+const loadDocuments = () => {
+    loadData(filterModel.value, sort.value, page.value);
 }
 
-const formatDateTime = (date) => {
-    if (date != null) {
-        let parts = date.split('T');
-
-        return `${parts[0]} ${parts[1].substring(0, 8)}`;
+const filterChange = (inputEvent) => {
+    if (inputEvent.data === null) {
+        loadDocuments();
+    }
+    else if (inputEvent.target.value.length >= 3) {
+        loadDocuments();
     }
 }
 
 const downloadDocumentLink = (id) => {
     return `${documentService.apiendpoint}/download?id=${id}`
 }
+
 </script>
 
 <template>
-
     <div class="grid">
         <div class="col-12">
             <div class="card">
-                <DataTable removableSort :value="documents" dataKey="id" paginator lazy @page="onPage($event)"
-                    @sort="onSort($event)" :rows="pageSize" :total-records="totalRecords">
+                <h2>Hujjatlar</h2>
+                <DataTable removableSort :value="storedDocuments" dataKey="id" paginator lazy @page="onPage($event)"
+                    @sort="onSort($event)" :rows="pageSize" :total-records="totalRecords"
+                    paginatorTemplate="FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+                    currentPageReportTemplate="{first} to {last} of {totalRecords}">
                     <template #empty>
                         <div class="p-6">
-                            <h1 class="lg:text-center text-2xl lg:text-5xl">Hujjatlar topilmadi...</h1>
+                            <h1 class="text-center">Hujjatlar topilmadi...</h1>
                         </div>
                     </template>
                     <template #loading>
@@ -189,9 +180,9 @@ const downloadDocumentLink = (id) => {
                         <template #body="slotProps">
                             <div class="flex align-items-center gap-1">
                                 <span style="width: 85%; word-break:break-all" class="text-xl">
-                                    {{ slotProps.data.title }}
+                                    {{ slotProps.data.isPrivate ? 'Maxfiy' : slotProps.data.title }}
                                 </span>
-                                <a style="color: rgb(16, 185, 129)"
+                                <a v-if="!slotProps.data.isPrivate" style="color: rgb(16, 185, 129)"
                                     :href="downloadDocumentLink(slotProps.data.id)">
                                     <i class="pi pi-download" style="font-size: 1.5rem;"></i>
                                 </a>
@@ -235,35 +226,11 @@ const downloadDocumentLink = (id) => {
                             {{ documentTypes.find(docT => docT.id == slotProps.data.documentTypeId).title }}
                         </template>
                     </Column>
-                    <Column>
-                        <template #header>
-                            <span>
-                                Maxfiyligi
-                            </span>
-                        </template>
-                        <template #body="slotProps">
-                            {{ slotProps.data.isPrivate ? "Yashirin" : "Ochiq" }}
-                        </template>
+                    <Column field="downloadCount" header="Yuklab olingan">
                     </Column>
-                    <Column style="min-width: 100px" class="px-0">
-                        <template #body="slotProps">
-                            <Button icon="pi pi-info-circle" class="ml-1 mt-2" severity="info" rounded
-                                @click="showAuditInfo($event, slotProps.data.id)" />
-                        </template>
-                    </Column>
+
                 </DataTable>
             </div>
         </div>
     </div>
-    <OverlayPanel ref="op">
-        <div class="flex flex-column">
-            <span>Kim tomonidan yaratilgan: {{ auditInfo.createdByFullName ?? `Ma'lumot yo'q` }}</span>
-            <span>Qachon yaratilgan: {{ formatDateTime(auditInfo.createdAt) }}</span>
-
-            <template v-if="auditInfo.updatedAt != null">
-                <span>Kim tomonidan o'zgartirilgan: {{ auditInfo.updatedByFullName ?? `Ma'lumot yo'q` }}</span>
-                <span>Qachon o'zgartirilgan: {{ formatDateTime(auditInfo.updatedAt) }}</span>
-            </template>
-        </div>
-    </OverlayPanel>
 </template>
