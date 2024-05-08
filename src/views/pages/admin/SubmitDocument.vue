@@ -134,11 +134,11 @@ const uploadEvent = (callback) => {
             documents.value = [];
         }).catch((err) => {
             const ext = err.response.data.errors["Document.WrongType"];
-            if (err.code === "ERR_BAD_REQUEST" && 
-                ext != null){
-                Swal.fire({ title: `${ext} kengaytmali fayllarni yuklash mumkin emas.`, icon: "error" })                    
-                }
-            else{
+            if (err.code === "ERR_BAD_REQUEST" &&
+                ext != null) {
+                Swal.fire({ title: `${ext} kengaytmali fayllarni yuklash mumkin emas.`, icon: "error" })
+            }
+            else {
                 Swal.fire({ title: "Hujjatlar yuklashda xatolik sodir bo'ldi.", icon: "error" })
             }
         })
@@ -378,10 +378,13 @@ const downloadDocumentLink = (id) => {
 
 <template>
     <div class="card">
+        <h1>{{ organization.title }}</h1>
         <Toast />
         <ConfirmPopup></ConfirmPopup>
-        <FileUpload accept=".pdf, .doc, .docx, .xlsx, .xls, .ppt, .epub, .csv" name="documents[]" :multiple="true" @select="onSelectedFiles" customUpload>
+        <FileUpload accept=".pdf, .doc, .docx, .xlsx, .xls, .ppt, .epub, .csv" name="documents[]" :multiple="true"
+            @select="onSelectedFiles" customUpload>
             <template #header="{ chooseCallback, uploadCallback, clearCallback, files }">
+
                 <div class="flex flex-wrap justify-content-between align-items-center flex-1 gap-2">
                     <div class="flex gap-2">
                         <Button @click="chooseCallback()" icon="pi pi-file-pdf" rounded outlined></Button>
@@ -497,12 +500,12 @@ const downloadDocumentLink = (id) => {
                     </div>
                 </template>
                 <template #body="slotProps">
-                    <div class="flex align-items-center gap-1" >
+                    <div class="flex align-items-center gap-1">
                         <span style="width: 85%; word-break:break-all" class="text-xl">
                             {{ slotProps.data.title }}
                         </span>
-                        <a style="color: rgb(16, 185, 129)"  :href="downloadDocumentLink(slotProps.data.id)">
-                            <i class="pi pi-download"  style="font-size: 1.5rem;"></i>
+                        <a style="color: rgb(16, 185, 129)" :href="downloadDocumentLink(slotProps.data.id)">
+                            <i class="pi pi-download" style="font-size: 1.5rem;"></i>
                         </a>
                     </div>
                 </template>
