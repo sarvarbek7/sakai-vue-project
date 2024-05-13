@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, reactive, ref, watch } from 'vue';
-import {useRouter} from 'vue-router';
+import { useRouter } from 'vue-router';
 import { DocumentService } from '@/service/DocumentService';
 import { useLayout } from '@/layout/composables/layout';
 import { StatisticsService } from '@/service/StatisticsService';
@@ -290,7 +290,8 @@ const expanded = (subordinate) => {
                                 <span style="width: 90%; word-break:break-all" class="text-xl">
                                     {{ !slotProps.data.isPrivate ? slotProps.data.title : 'Maxfiy' }}
                                 </span>
-                                <a v-if="!slotProps.data.isPrivate" style="color: rgb(16, 185, 129)" :href="downloadDocumentLink(slotProps.data.id)">
+                                <a v-if="!slotProps.data.isPrivate" style="color: rgb(16, 185, 129)"
+                                    :href="downloadDocumentLink(slotProps.data.id)">
                                     <i class="pi pi-download" style="font-size: 1.5rem;"></i>
                                 </a>
                             </div>
@@ -306,15 +307,15 @@ const expanded = (subordinate) => {
                     <Column style="width: 14%" field="documentType.title" header="Hujjat turi"></Column>
                 </DataTable>
                 <div class="flex mt-2 justify-content-end">
-                    <Button @click="router.push({name: 'documents'})" class="p-2 px-4 text-xl" label="Barchasi" />
+                    <Button @click="router.push({ name: 'documents' })" class="p-2 px-4 text-xl" label="Barchasi" />
                 </div>
             </div>
         </div>
         <div class="col-12">
             <div class="card">
                 <h4 class="m-0">Korxonalar kesimida</h4>
-                <div class="overflow-x-auto">
-                    <table class="w-full">
+                <div style="border-radius: 10px;" class="overflow-x-auto border-1">
+                    <table class="w-full border-0">
                         <thead class="bg-primary">
                             <tr>
                                 <th style="width: 60;">Korxona nomi</th>
@@ -328,10 +329,12 @@ const expanded = (subordinate) => {
                             <template v-for="subordinate in railwaySubordinates" :key="subordinate.id">
                                 <tr class="outer">
                                     <td>
-                                        <Button @click="expanded(subordinate)" class="p-0"
-                                            style="width: 16px; border-radius: 0"
-                                            :icon="!subordinate.isExpanded ? 'pi pi-plus' : 'pi pi-minus'"
-                                            severity="secondary"></Button>
+                                        <template v-if="subordinate.hasSubordinate">
+                                            <Button @click="expanded(subordinate)" class="p-0"
+                                                style="width: 16px; border-radius: 0"
+                                                :icon="!subordinate.isExpanded ? 'pi pi-plus' : 'pi pi-minus'"
+                                                severity="secondary"></Button>
+                                        </template>
                                         {{ subordinate.title }}
                                     </td>
                                     <td v-for="docType in docTypes" :key="docType.id">
@@ -345,11 +348,15 @@ const expanded = (subordinate) => {
                                         <template v-for="sub in subordinate.subordinates" :key="sub.id">
                                             <tr class="inner">
                                                 <td>
-                                                    <Button @click="expanded(sub)" class="ml-4 p-0"
-                                                        style="width: 16px; border-radius: 0"
-                                                        :icon="!sub.isExpanded ? 'pi pi-plus' : 'pi pi-minus'"
-                                                        severity="secondary"></Button>
-                                                    {{ sub.title }}
+                                                    <div class="ml-6">
+                                                        <template v-if="sub.hasSubordinate">
+                                                            <Button @click="expanded(sub)" class="p-0"
+                                                                style="width: 16px; border-radius: 0"
+                                                                :icon="!sub.isExpanded ? 'pi pi-plus' : 'pi pi-minus'"
+                                                                severity="secondary"></Button>
+                                                        </template>
+                                                        {{ sub.title }}
+                                                    </div>
                                                 </td>
                                                 <td v-for="docType in docTypes" :key="docType.id">
                                                     {{ sub.countByDocType.find(t => t.documentTypeId ==
@@ -361,8 +368,7 @@ const expanded = (subordinate) => {
                                             <template v-if="sub.isExpanded">
                                                 <template
                                                     v-if="sub.subordinates !== undefined && sub.subordinates.length > 0">
-                                                    <tr v-for="last of sub.subordinates" :key="last.id" 
-                                                        class="last">
+                                                    <tr v-for="last of sub.subordinates" :key="last.id" class="last">
                                                         <td>
                                                             <span class="ml-8 p-0">{{ last.title }}</span>
                                                         </td>
@@ -374,14 +380,8 @@ const expanded = (subordinate) => {
                                                             item.count, 0) }}</td>
                                                     </tr>
                                                 </template>
-                                                <template v-else>
-                                                    <span class="pl-8 p-2">Quyi korxona mavjud emas</span>
-                                                </template>
                                             </template>
                                         </template>
-                                    </template>
-                                    <template v-else>
-                                        <span class="pl-6 p-2">Quyi korxona mavjud emas</span>
                                     </template>
                                 </template>
                             </template>
@@ -413,12 +413,12 @@ th {
     font-weight: 500;
     text-align: start;
     padding: 1.2rem 0.75rem;
-    border-right: 1px solid grey;
+    /* border-right: 1px solid grey; */
 }
 
 td {
     padding: 1rem;
-    border-right: 1px solid #ccc;
+    /* border-right: 1px solid #ccc; */
 }
 
 tr:nth-child(odd of .outer) {}

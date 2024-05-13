@@ -27,30 +27,30 @@ const openDocuments = (organizationId) => {
 
 <template>
     <div class="grid gap-4">
-        <Card v-for="organization in organizations" :key="organization.id" style="width: 25rem; overflow: hidden">
-                <template #header>
-                    <div class="flex justify-content-center pt-3">
-                        <img height="200px" width="260px" style="object-fit: cover;" alt="user header"
-                            src="/demo/images/galleria/galleria2.jpg">
-                    </div>
-                </template>
-            <template #title>
+        <div class="card flex flex-column bg-yellow-100 justify-content-between" v-for="organization in organizations" :key="organization.id"
+            style="width: 25rem; overflow: hidden">
+            <div class="card-header">
+                <div class="flex justify-content-center pt-3">
+                    <img height="200px" width="260px" style="object-fit: cover;" alt="user header"
+                        src="/demo/images/galleria/galleria2.jpg">
+                </div>
+            </div>
+            <div class="card-title">
                 <h3>{{ organization.title }}</h3>
-            </template>
-            <template #subtitle>
+            </div>
+            <div class="card-subtitle">
                 <h6>{{ organization.physicalIdentity }}</h6>
                 <Chip class="m-1">
                     Quyi tashkilotlar tomonidan topshirilgan hujjatlar soni {{
                         organization.documentsCountIncludeSubordinates - organization.documentsCount }} ta.
                 </Chip>
-            </template>
-            <template #content>
-
-                <p class="m-0">
+            </div>
+            <div class="card-content">
+                <p class="m-0 bg-black-alpha">
                     {{ organization.details }}
                 </p>
-            </template>
-            <template #footer>
+            </div>
+            <div class="pt-2">
                 <div class="flex gap-3 mt-1">
                     <Button rounded class="w-full" disabled>
                         Quyi tashkilotlar: {{ organization.subordinatesCount }}
@@ -59,7 +59,7 @@ const openDocuments = (organizationId) => {
                         Hujjatlar soni: {{ organization.documentsCount }}
                     </Button>
                 </div>
-            </template>
-        </Card>
+            </div>
+        </div>
     </div>
 </template>
